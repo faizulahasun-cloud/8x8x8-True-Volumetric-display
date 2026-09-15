@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8x8x8 LED Cube V5 - Production Control Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-color: #f8fafc;
+            --accent-blue: #3b82f6;
+            --accent-green: #22c55e;
+            --accent-red: #ef4444;
+            --border-color: #334155;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            letter-spacing: 0.05em;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            background-color: var(--accent-red);
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .dot.connected {
+            background-color: var(--accent-green);
+        }
+
+        .dot.busy {
+            background-color: #eab308;
+        }
+
+        button {
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-danger {
+            background-color: var(--accent-red);
+        }
+
+        .btn-green {
+            background-color: var(--accent-green);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        h2 {
+            font-size: 1.1rem;
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-color);
+            padding: 10px;
+            box-sizing: border-box;
+            font-family: monospace;
+            margin-bottom: 10px;
+        }
+
+        .terminal {
+            background-color: #090d16;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            height: 150px;
+            overflow-y: auto;
+            color: #94a3b8;
+        }
+
+        .terminal p {
+            margin: 0 0 5px 0;
+        }
+
+        .terminal p.err {
+            color: var(--accent-red);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>8x8x8 LED Cube V5 Engine Dashboard</h1>
+
+    <div class="container">
+        <!-- Status Bar -->
+        <div class="card status-bar">
+            <div class="status-indicator">
+                <span id="statusDot" class="dot"></span>
+                <span id="statusText">Status: Disconnected</span>
+            </div>
+            <button id="connectBtn" onclick="toggleBluetooth()">Connect HM-10 Bluetooth</button>
+        </div>
+
+        <!-- Controls Section -->
+        <div class="grid-2">
+            <div class="card">
+                <h2>Mode & Real-time Command Deck</h2>
+                <div style="font-size: 0.9rem; margin-bottom: 8px; color: #94a3b8;">System Mode Selection</div>
+                <div class="btn-group">
+                    <button class="cmd-btn" onclick="sendCommand('A')">Auto Carousel Mode (A)</button>
+                    <button class="cmd-btn" onclick="sendCommand('M')" style="background-color: #475569;">Manual Mode (M)</button>
+                </div>
+
+                <div style="font-size: 0.9rem; margin-bottom: 8px; color: #94a3b8;">Animation Management</div>
+                <div class="btn-group">
+                    <button class="cmd-btn btn-green" onclick="sendCommand('N')">Next Animation (N)</button>
+                    <button class="cmd-btn btn-danger" onclick="sendCommand('C')">Clear Canvas (C)</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Dynamic Compiler Formula Field</h2>
+                <div style="font-size: 0.9rem; margin-bottom: 8px; color: #94a3b8;">Math Function String Expression</div>
+                <input type="text" id="formulaInput" value="SIN(X) + COS(Y) > Z">
+                <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 15px;">
+                    Operations: X, Y, Z, F, SIN(), COS(), SQRT(), ABS(), +, -, *, /, %, ==, !=, &amp;&amp;, ||
+                </div>
+                <div class="btn-group">
+                    <button class="cmd-btn btn-green" onclick="sendFormula()">Transmit &amp; Parse</button>
+                    <button class="cmd-btn" onclick="executeFormula()">Execute / Compile (R)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terminal Output -->
+        <div class="card">
+            <h2>Hardware System Terminal Output</h2>
+            <div class="terminal" id="terminalOutput">
+                <p>&gt; System initialized. Awaiting Web Bluetooth (HM-10) Connection...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let bluetoothDevice = null;
+        let bluetoothCharacteristic = null;
+
+        const HM10_SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb';
+        const HM10_CHARACTERISTIC_UUID = '0000ffe1-0000-1000-8000-00805f9b34fb';
+
+        function logToTerminal(message, isError) {
+            const term = document.getElementById('terminalOutput');
+            const timestamp = new Date().toTimeString().split(' ')[0];
+            const p = document.createElement('p');
+            if (isError) p.className = 'err';
+            p.textContent = `[${timestamp}] ${message}`;
+            term.appendChild(p);
+            term.scrollTop = term.scrollHeight;
+        }
+
+        async function toggleBluetooth() {
+            try {
+                if (!bluetoothDevice || !bluetoothDevice.gatt.connected) {
+                    logToTerminal("Scanning for HM-10 Bluetooth device...");
+
+                    bluetoothDevice = await navigator.bluetooth.requestDevice({
+                        filters: [{ services: [HM10_SERVICE_UUID] }],
+                        optionalServices: [HM10_SERVICE_UUID]
+                    });
+
+                    bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+                    const server = await bluetoothDevice.gatt.connect();
+                    const service = await server.getPrimaryService(HM10_SERVICE_UUID);
+                    bluetoothCharacteristic = await service.getCharacteristic(HM10_CHARACTERISTIC_UUID);
+
+                    // v5: listen for the firmware's ACK/NACK bytes ('K'/'X')
+                    // so reception/compile results are actually visible here
+                    // instead of us guessing from LED behavior alone.
+                    try {
+                        await bluetoothCharacteristic.startNotifications();
+                        bluetoothCharacteristic.addEventListener('characteristicvaluechanged', handleIncomingData);
+                    } catch (notifyErr) {
+                        logToTerminal("Notifications unavailable on this characteristic: " + notifyErr.message, true);
+                    }
+
+                    document.getElementById('statusDot').classList.add('connected');
+                    document.getElementById('statusText').innerText = "Status: Connected (HM-10)";
+                    document.getElementById('connectBtn').innerText = "Disconnect Bluetooth";
+                    document.getElementById('connectBtn').style.backgroundColor = "#ef4444";
+
+                    logToTerminal("Successfully connected to HM-10 module via BLE.");
+                } else {
+                    if (bluetoothDevice.gatt.connected) {
+                        bluetoothDevice.gatt.disconnect();
+                    }
+                    onDisconnected();
+                }
+            } catch (error) {
+                console.error("Bluetooth connection error:", error);
+                logToTerminal("Connection failed: " + error.message, true);
+            }
+        }
+
+        // v5: decode bytes pushed back from the firmware. Currently just
+        // single-byte ACK ('K') / NACK ('X'), but written generically so any
+        // future firmware text can be read too.
+        function handleIncomingData(event) {
+            const value = event.target.value;
+            const text = new TextDecoder().decode(value);
+            for (const ch of text) {
+                if (ch === 'K') logToTerminal("Arduino ACK (K): last operation succeeded.");
+                else if (ch === 'X') logToTerminal("Arduino NACK (X): last operation FAILED (bad/empty formula, or compile error).", true);
+                else logToTerminal(`Arduino: ${ch}`);
+            }
+        }
+
+        function onDisconnected() {
+            bluetoothDevice = null;
+            bluetoothCharacteristic = null;
+            document.getElementById('statusDot').classList.remove('connected');
+            document.getElementById('statusText').innerText = "Status: Disconnected";
+            document.getElementById('connectBtn').innerText = "Connect HM-10 Bluetooth";
+            document.getElementById('connectBtn').style.backgroundColor = "#3b82f6";
+            logToTerminal("Bluetooth device disconnected.");
+        }
+
+        const BLE_CHUNK_SIZE = 16; // stay under typical HM-10 20-byte ATT MTU
+        const BLE_CHUNK_DELAY_MS = 30;
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // ---------------------------------------------------------------
+        // v4 FIX (Bug 2): Web Bluetooth rejects overlapping writeValue()
+        // calls on the same characteristic ("GATT operation already in
+        // progress"). Previously, clicking "Execute / Compile (R)" while
+        // sendFormula()'s chunked transmission was still running would
+        // throw and silently no-op the R command. All writes now go
+        // through this single serialized queue, and command buttons are
+        // disabled while a write is in flight so it can't happen from the
+        // UI either.
+        // ---------------------------------------------------------------
+        let writeQueue = Promise.resolve();
+        function setBusy(isBusy) {
+            document.querySelectorAll('.cmd-btn').forEach(btn => btn.disabled = isBusy);
+            const dot = document.getElementById('statusDot');
+            if (bluetoothCharacteristic) {
+                dot.classList.toggle('busy', isBusy);
+            }
+        }
+        function enqueueWrite(task) {
+            const run = async () => {
+                setBusy(true);
+                try {
+                    await task();
+                } finally {
+                    setBusy(false);
+                }
+            };
+            const result = writeQueue.then(run, run);
+            writeQueue = result.catch(() => {}); // keep the chain alive even if this write failed
+            return result;
+        }
+
+        async function rawWrite(bytes) {
+            if (!bluetoothCharacteristic) {
+                logToTerminal("Error: HM-10 module is not connected.", true);
+                alert("Please connect to the HM-10 Bluetooth module first.");
+                throw new Error("Not connected");
+            }
+            await bluetoothCharacteristic.writeValue(bytes);
+        }
+
+        async function sendCommand(cmd) {
+            await enqueueWrite(async () => {
+                try {
+                    const encoder = new TextEncoder();
+                    await rawWrite(encoder.encode(cmd));
+                    logToTerminal(`Sent command: ${cmd}`);
+                } catch (error) {
+                    logToTerminal(`Failed to send command ${cmd}: ${error.message}`, true);
+                }
+            });
+        }
+
+        // Sends a long payload in small pieces with a short delay between
+        // each write, so it doesn't get silently truncated by the BLE
+        // module's ATT MTU (commonly ~20 bytes on cheap HM-10 clones).
+        async function sendChunked(payload) {
+            await enqueueWrite(async () => {
+                const encoder = new TextEncoder();
+                try {
+                    for (let i = 0; i < payload.length; i += BLE_CHUNK_SIZE) {
+                        const chunk = payload.slice(i, i + BLE_CHUNK_SIZE);
+                        await rawWrite(encoder.encode(chunk));
+                        await sleep(BLE_CHUNK_DELAY_MS);
+                    }
+                    logToTerminal(`Transmitted: ${payload}`);
+                } catch (error) {
+                    logToTerminal(`Failed to transmit payload: ${error.message}`, true);
+                }
+            });
+        }
+
+        async function sendFormula() {
+            const formula = document.getElementById('formulaInput').value;
+            if (!formula) {
+                logToTerminal("Error: Formula field is empty.", true);
+                return;
+            }
+            // Wrap in @ and E markers required by V3FunctionConversion.h.
+            // Also remove any trailing newlines that would cause receiveError = true.
+            const packagedFormula = "@" + formula.trim() + "E";
+            await sendChunked(packagedFormula);
+        }
+
+        async function executeFormula() {
+            await sendCommand('R');
+        }
+    </script>
+</body>
+</html>
