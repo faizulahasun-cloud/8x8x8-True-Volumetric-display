@@ -1,0 +1,136 @@
+================================================================
+  8x8x8 LED CUBE — USER MANUAL v1
+  (for firmware v7)
+================================================================
+
+CONTENTS
+  1. What you need
+  2. Turning the cube on
+  3. Using the cube WITHOUT the app
+  4. Using the cube WITH the app
+  5. Writing your own light patterns (formulas)
+  6. Troubleshooting
+
+----------------------------------------------------------------
+1. WHAT YOU NEED
+----------------------------------------------------------------
+  - The LED Cube (Arduino + HM-10 Bluetooth module inside)
+  - Power supply for the cube
+  - (Optional, for advanced control) A phone, tablet, or computer
+    with a Chrome-based browser that supports Web Bluetooth
+    (Chrome or Edge on desktop/Android). Note: iPhone's Safari
+    does NOT support Web Bluetooth, so app control from an iPhone
+    is not currently possible.
+
+----------------------------------------------------------------
+2. TURNING THE CUBE ON
+----------------------------------------------------------------
+  1. Connect the power supply and switch the cube on at the main
+     power switch.
+  2. The cube will automatically start playing its built-in
+     light show — no app or phone needed. This is "Auto Mode".
+
+----------------------------------------------------------------
+3. USING THE CUBE WITHOUT THE APP
+----------------------------------------------------------------
+The cube has two physical controls on the base: a TOUCH SENSOR
+and a BRIGHTNESS DIAL (potentiometer).
+
+  BRIGHTNESS DIAL
+    - Turn it at any time to raise or lower the cube's
+      brightness. Works in every mode.
+
+  TOUCH SENSOR
+    - HOLD for 3 seconds: switches between Auto Mode (cube
+      automatically cycles through all animations every 10
+      seconds) and Manual Mode (cube stays on one animation
+      until you change it).
+    - QUICK TAP (while in Manual Mode): jumps to the next
+      animation in the list.
+
+  That's it — the cube will run its full built-in animation
+  library (~37 patterns) forever on just these two controls,
+  no app required.
+
+----------------------------------------------------------------
+4. USING THE CUBE WITH THE APP
+----------------------------------------------------------------
+The "app" is a web page (dashboard) that talks to the cube over
+Bluetooth. It gives you the same Auto/Manual/Next/Clear controls
+as the touch sensor, PLUS the ability to send your own custom
+light formulas.
+
+  STEP 1 — Open the dashboard
+    Open the dashboard web page in Chrome or Edge (desktop or
+    Android). Bluetooth must be turned on on your device.
+
+  STEP 2 — Connect
+    Click "Connect HM-10 Bluetooth" at the top of the page and
+    select your cube from the list that pops up. The status dot
+    turns green once connected.
+
+  STEP 3 — Control the cube
+    Mode & Command buttons:
+      - Auto Carousel Mode (A) — cube auto-cycles animations
+      - Manual Mode (M)        — cube holds on one animation
+      - Next Animation (N)     — advance to the next animation
+                                  (only works in Manual Mode)
+      - Clear Canvas (C)       — blank the cube and cancel
+                                  anything in progress
+
+    While a command is being sent, the buttons will be greyed
+    out for a moment (status dot turns yellow/"busy") — this is
+    normal, just wait for it to finish.
+
+----------------------------------------------------------------
+5. WRITING YOUR OWN LIGHT PATTERNS (FORMULAS)
+----------------------------------------------------------------
+The dashboard has a "Dynamic Compiler Formula Field" where you
+can type a math formula and the cube will light up voxels
+wherever that formula is true.
+
+  Available building blocks:
+    X, Y, Z   — position of a voxel inside the cube (0-7 each)
+    F         — animation frame number (changes over time, so
+                you can make things move/animate)
+    SIN(), COS(), SQRT(), ABS()
+    +  -  *  /  %
+    ==  !=
+    &&  ||
+
+  Example (already filled in by default):
+    SIN(X) + COS(Y) > Z
+
+  To send it:
+    1. Type your formula into the text box.
+    2. Click "Transmit & Parse" — the cube will blink once to
+       confirm it received the formula (display then goes dark
+       while it waits for you to run it).
+    3. Click "Execute / Compile (R)" — the cube will blink again
+       and then start displaying your pattern.
+
+  Watch the "Hardware System Terminal Output" panel at the
+  bottom of the page — the cube reports back after each step:
+    - "Arduino ACK (K)"  = success
+    - "Arduino NACK (X)" = failed (usually an invalid formula —
+      check your syntax and try again)
+
+----------------------------------------------------------------
+6. TROUBLESHOOTING
+----------------------------------------------------------------
+  For any issue with the cube or the app not responding as
+  expected, try these two things first — they resolve the large
+  majority of hiccups:
+
+    1. Power-cycle the cube: turn it OFF and back ON at the main
+       power switch.
+    2. Refresh the app page in your browser (reload/refresh),
+       then reconnect via "Connect HM-10 Bluetooth".
+
+  If the problem continues after both of these, note exactly
+  what you did and what the cube/app showed, so it can be looked
+  into further.
+
+================================================================
+  End of manual — v1
+================================================================
