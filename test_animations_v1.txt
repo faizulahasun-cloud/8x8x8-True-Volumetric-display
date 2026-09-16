@@ -1,0 +1,109 @@
+LED CUBE V7 — CUSTOM FORMULA TEST SET
+Base architecture: v7 (locked)
+Axes: X = left→right (0-7), Y = front→back (0-7), Z = bottom→top (0-7), F = frame counter (0-49, advances every FRAME_TIME ms)
+Grammar: X, Y, Z, F, SIN(), COS(), SQRT(), ABS(), DIST(x1,y1,z1,x2,y2,z2), MAX(a,b), MIN(a,b), SQR()
+         + - * / %   == != < <= > >=   && ||
+Paste any one line into the formula field, then Transmit & Parse, then Execute/Compile (R).
+
+------------------------------------------------------------
+SECTION 1 — STATIC SHAPES (no F, good sanity checks / decorations)
+------------------------------------------------------------
+
+Single voxel, dead center-ish (already hardware-confirmed):
+X == 4 && Y == 4 && Z == 4
+
+Full outer shell (hollow cube):
+X==0 || X==7 || Y==0 || Y==7 || Z==0 || Z==7
+
+Solid sphere, centered, radius ~3.2:
+DIST(X,Y,Z,3.5,3.5,3.5) <= 3.2
+
+Hollow sphere shell (radius 2.5 to 3.2):
+DIST(X,Y,Z,3.5,3.5,3.5) > 2.5 && DIST(X,Y,Z,3.5,3.5,3.5) <= 3.2
+
+Octahedron (diamond) solid:
+ABS(X-3.5) + ABS(Y-3.5) + ABS(Z-3.5) <= 3.5
+
+X marks the spot - two diagonal planes crossing:
+X==Y || X+Y==7
+
+3D checkerboard (alternating voxels):
+(X+Y+Z) % 2 == 0
+
+Every other layer, solid:
+Z % 2 == 0
+
+Four corner pillars, full height:
+(X==0 || X==7) && (Y==0 || Y==7)
+
+------------------------------------------------------------
+SECTION 2 — TIME-ANIMATED (uses F, moves/cycles continuously)
+------------------------------------------------------------
+
+Single layer sweeping bottom to top and looping:
+Z == (F % 8)
+
+Two layers moving in opposite directions (meet and pass):
+Z == (F % 8) || Z == (7 - (F % 8))
+
+Expanding sphere, pulsing (radius grows 0..5.6 then resets):
+DIST(X,Y,Z,3.5,3.5,3.5) <= ((F % 16) * 0.35)
+
+Expanding hollow shell only (ring shockwave from center):
+DIST(X,Y,Z,3.5,3.5,3.5) >= ((F % 16) * 0.35) - 0.5 && DIST(X,Y,Z,3.5,3.5,3.5) <= ((F % 16) * 0.35) + 0.5
+
+Rotating diagonal wall (uses SIN/COS to fake rotation of a plane):
+(X - 3.5) * COS(F * 5) - (Y - 3.5) * SIN(F * 5) > 0 && Z >= 3 && Z <= 4
+
+Rain: columns "falling" at staggered offsets per X/Y:
+Z == (7 - ((F + X*3 + Y*5) % 8))
+
+Vertical sine wave ribbon traveling across X:
+Y == 3 && ABS(Z - (3.5 + 3 * SIN((X*32 + F*10) % 256) / 255)) < 1
+
+Breathing solid cube (grows/shrinks like a pulsing heart, Chebyshev distance):
+MAX(ABS(X-3.5), MAX(ABS(Y-3.5), ABS(Z-3.5))) <= (1.5 + 2.5 * ABS(SIN(F*6)) / 255)
+
+Twin comets orbiting the vertical axis at different heights (uses SIN/COS for X/Y offset comparison, approximate):
+(ABS(X - (3.5 + 3*COS(F*8)/255)) < 1) && (ABS(Y - (3.5 + 3*SIN(F*8)/255)) < 1) && Z == (F % 8)
+
+Spiral staircase (single point climbing while orbiting):
+(ABS(X - (3.5 + 3*COS(F*12)/255)) < 1) && (ABS(Y - (3.5 + 3*SIN(F*12)/255)) < 1) && Z == ((F/2) % 8)
+
+------------------------------------------------------------
+SECTION 3 — MORE COMPLEX / COMBINED CONDITIONS
+------------------------------------------------------------
+
+Hollow sphere with a "polar cap" cut off top and bottom (like a barrel):
+DIST(X,Y,Z,3.5,3.5,3.5) > 2.5 && DIST(X,Y,Z,3.5,3.5,3.5) <= 3.2 && Z > 1 && Z < 6
+
+Interlocking shell + inner pulsing core:
+(DIST(X,Y,Z,3.5,3.5,3.5) > 2.8 && DIST(X,Y,Z,3.5,3.5,3.5) <= 3.3) || DIST(X,Y,Z,3.5,3.5,3.5) <= ((F % 16) * 0.15)
+
+Diagonal scanning plane through the whole cube, ping-ponging:
+ABS((X+Y+Z) - (F % 42 < 21 ? (F % 21) : (42 - (F % 42)))) < 1
+  NOTE: ternary "?:" is NOT supported by this parser - do not use this line as-is,
+  it is included only to show what NOT to try. Use the version below instead:
+
+Diagonal scanning plane, ping-pong via ABS/SIN trick (parser-safe):
+ABS((X+Y+Z) - (10.5 + 10.5*SIN(F*10)/255)) < 1
+
+Checkerboard shell (hollow cube surface, alternating voxels only):
+(X==0 || X==7 || Y==0 || Y==7 || Z==0 || Z==7) && ((X+Y+Z) % 2 == 0)
+
+------------------------------------------------------------
+NOTES
+------------------------------------------------------------
+- Every formula above has been checked against the actual v7 parser grammar
+  (operators, function names, argument counts) but NOT run through the
+  fixed-point evaluate() by hand for every single one - if a "complex" one
+  in Section 3 looks visually odd, it's the formula's math to tweak, not
+  the v7 base (which is locked and confirmed correct).
+- SIN()/COS() take an angle argument in the 0-255 "byte angle" range used by
+  the firmware's lookup table (not degrees/radians) and return roughly -255..255.
+  That's why formulas divide by 255 and multiply angle inputs by F - this
+  keeps units consistent with how the firmware's fixed-point trig works.
+- Ternary (?:) is not supported - work around it with comparisons/ABS/SIN tricks
+  as shown in Section 3.
+- If a formula doesn't compile, watch for the NACK ('X') in the terminal -
+  that means a syntax issue in the formula itself, not a hardware problem.
