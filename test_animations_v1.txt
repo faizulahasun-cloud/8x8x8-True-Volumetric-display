@@ -1,5 +1,5 @@
 LED CUBE V7 — CUSTOM FORMULA TEST SET
-Base architecture: v7 (locked)
+Base architecture: v1 (locked)
 Axes: X = left→right (0-7), Y = front→back (0-7), Z = bottom→top (0-7), F = frame counter (0-49, advances every FRAME_TIME ms)
 Grammar: X, Y, Z, F, SIN(), COS(), SQRT(), ABS(), DIST(x1,y1,z1,x2,y2,z2), MAX(a,b), MIN(a,b), SQR()
          + - * / %   == != < <= > >=   && ||
