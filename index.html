@@ -132,7 +132,7 @@
             flex-wrap: wrap;
         }
 
-        input[type="text"] {
+        input[type="text"], input[type="number"] {
             width: 100%;
             background-color: var(--bg-color);
             border: 1px solid var(--border-color);
@@ -193,6 +193,17 @@
                 <div class="btn-group">
                     <button class="cmd-btn btn-green" onclick="sendCommand('N')">Next Animation (N)</button>
                     <button class="cmd-btn btn-danger" onclick="sendCommand('C')">Clear Canvas (C)</button>
+                </div>
+
+                <!-- v1.01: custom (BLE formula) animation speed control.
+                     Sends "T<ms>;" which the firmware clamps to a 100ms
+                     floor (no ceiling) and applies to the active BLE
+                     formula animation only - built-in animation speeds are
+                     not adjustable from here in v1.01. -->
+                <div style="font-size: 0.9rem; margin-bottom: 8px; color: #94a3b8;">Custom Animation Frame Speed (ms, min 100)</div>
+                <div class="btn-group">
+                    <input type="number" id="frameTimeInput" min="100" step="10" value="200" style="margin-bottom: 0;">
+                    <button class="cmd-btn" onclick="sendFrameTime()">Set Speed (T)</button>
                 </div>
             </div>
 
@@ -388,7 +399,7 @@
                 logToTerminal("Error: Formula field is empty.", true);
                 return;
             }
-            // Wrap in @ and E markers required by V3FunctionConversion.h.
+            // Wrap in @ and E markers required by V1FunctionConversion.h.
             // Also remove any trailing newlines that would cause receiveError = true.
             const packagedFormula = "@" + formula.trim() + "E";
             await sendChunked(packagedFormula);
@@ -396,6 +407,24 @@
 
         async function executeFormula() {
             await sendCommand('R');
+        }
+
+        // v1.01: send "T<ms>;" to set the custom (BLE formula) animation
+        // speed. Firmware clamps to a 100ms floor (no ceiling) and acks
+        // with the value actually applied, so the UI doesn't need to
+        // pre-validate beyond basic sanity.
+        async function sendFrameTime() {
+            const raw = document.getElementById('frameTimeInput').value;
+            const ms = parseInt(raw, 10);
+            if (isNaN(ms) || ms <= 0) {
+                logToTerminal("Error: Enter a valid frame time in milliseconds.", true);
+                return;
+            }
+            if (ms < 100) {
+                logToTerminal("Note: firmware enforces a 100ms floor - value will be clamped up.");
+            }
+            const packagedFrameTime = "T" + ms.toString() + ";";
+            await sendChunked(packagedFrameTime);
         }
     </script>
 </body>
